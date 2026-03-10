@@ -1,0 +1,118 @@
+.App {
+  min-height: 100vh;
+  padding-bottom: 2rem;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 2rem;
+}
+
+.tab-navigation {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border: none;
+  background: transparent;
+  color: #667eea;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.content-area {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  min-height: 600px;
+}
+
+.uploaded-docs-sidebar {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+}
+
+.uploaded-docs-sidebar h3 {
+  color: #667eea;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.uploaded-docs-sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.uploaded-docs-sidebar li {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #333;
+  border-left: 3px solid #667eea;
+  word-break: break-word;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .uploaded-docs-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .tab-button {
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .content-area {
+    padding: 1.5rem;
+  }
+}
