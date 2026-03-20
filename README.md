@@ -4,7 +4,7 @@ ContextIQ is a full-stack RAG (Retrieval-Augmented Generation) application that 
 
 ## Ownership
 
-This project is owned and maintained by Malan Chanuka Herath.
+This project is owned and maintained by Malan Chanuka Herath, Chanith Adikari.
 
 ## Features
 
