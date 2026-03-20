@@ -66,6 +66,9 @@ htmlcov/
 # Qdrant
 qdrant_storage/
 
+# Runtime uploads
+uploads/
+
 # Model files (if you download large models)
 models/
 *.bin

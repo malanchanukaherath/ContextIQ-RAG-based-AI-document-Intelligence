@@ -23,6 +23,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+def ingest_pdf_to_vector_store(pdf_path: str, source_id: str) -> int:
+    """Load, chunk, embed, and upsert a PDF into Qdrant. Returns chunk count."""
+    chunks = load_and_chunk_pdf(pdf_path)
+    vectors = embed_texts(chunks)
+    ids = [str(uuid.uuid5(uuid.NAMESPACE_URL, f"{source_id}-{i}")) for i in range(len(chunks))]
+    payloads = [{"text": chunks[i], "source": source_id} for i in range(len(chunks))]
+    QdrantStorage().upsert(ids, vectors, payloads)
+    return len(chunks)
+
 inngest_client = inngest.Inngest(
     app_id="rag_app",
     logger=logger,
@@ -41,20 +51,14 @@ async def rag_ingest_pdf(ctx: inngest.Context):
             source_id = ctx.event.data.get("source_id", pdf_path)
             if not pdf_path:
                 raise ValueError("pdf_path is required in event data")
-            chunks = load_and_chunk_pdf(pdf_path)
-            return {"chunks": chunks, "source_id": source_id}
+            return {"pdf_path": pdf_path, "source_id": source_id}
 
-        def upsert(data: dict):
-            chunks = data["chunks"]
-            source_id = data["source_id"]
-            vectors = embed_texts(chunks)
-            ids = [str(uuid.uuid5(uuid.NAMESPACE_URL, f"{source_id}-{i}")) for i in range(len(chunks))]
-            payloads = [{"text": chunks[i], "source": source_id} for i in range(len(chunks))]
-            QdrantStorage().upsert(ids, vectors, payloads)
-            return {"ingested": len(chunks)}
+        def ingest(data: dict):
+            ingested_count = ingest_pdf_to_vector_store(data["pdf_path"], data["source_id"])
+            return {"ingested": ingested_count}
 
-        chunks_and_src = await ctx.step.run("load-and-chunk", _load, ctx)
-        ingested = await ctx.step.run("embed-and-upsert", upsert, chunks_and_src)
+        job_input = await ctx.step.run("load-event-data", _load, ctx)
+        ingested = await ctx.step.run("ingest-pdf", ingest, job_input)
         return ingested
     except Exception as e:
         logger.error(f"Error in rag_ingest_pdf: {str(e)}")
@@ -139,22 +143,37 @@ async def upload_document(file: UploadFile = File(...)):
             content = await file.read()
             f.write(content)
         
-        # Trigger Inngest event for processing
-        await inngest_client.send(
-            inngest.Event(
-                name="rag/ingest_pdf",
-                data={
-                    "pdf_path": str(file_path),
-                    "source_id": file.filename
-                }
+        # Prefer async processing through Inngest, but fall back to direct ingest locally.
+        try:
+            await inngest_client.send(
+                inngest.Event(
+                    name="rag/ingest_pdf",
+                    data={
+                        "pdf_path": str(file_path),
+                        "source_id": file.filename
+                    }
+                )
             )
-        )
-        
-        return {
-            "message": f"Successfully uploaded {file.filename}",
-            "filename": file.filename,
-            "path": str(file_path)
-        }
+
+            return {
+                "message": f"Successfully uploaded {file.filename}",
+                "filename": file.filename,
+                "path": str(file_path),
+                "processing": "queued"
+            }
+        except Exception as inngest_error:
+            logger.warning(
+                "Inngest unavailable, processing upload synchronously. Error: %s",
+                str(inngest_error)
+            )
+            ingested = ingest_pdf_to_vector_store(str(file_path), file.filename)
+            return {
+                "message": f"Successfully uploaded and processed {file.filename}",
+                "filename": file.filename,
+                "path": str(file_path),
+                "processing": "synchronous_fallback",
+                "ingested_chunks": ingested
+            }
     except HTTPException:
         raise
     except Exception as e:

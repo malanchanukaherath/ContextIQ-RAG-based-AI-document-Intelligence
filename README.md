@@ -1,73 +1,163 @@
-# RAG-Production-App
+# ContextIQ - RAG-Based AI Document Intelligence
 
-## Overview
-**RAG-Production-App** is a full-stack **Retrieval-Augmented Generation (RAG)** system designed for **production environments**.  
-It allows users to upload documents, convert them into vector embeddings, and perform natural language queries over their private data.
+ContextIQ is a full-stack RAG (Retrieval-Augmented Generation) application that lets you upload PDF documents, embed their content, store vectors in Qdrant, and ask natural-language questions grounded in your own files.
 
-The system combines **Large Language Models (LLMs)** with **vector search** to deliver accurate, context-aware answers at scale.  
-It features a **Python backend**, **React frontend**, and **Qdrant** as the vector database.
+## Ownership
 
----
-
-## Project Theme
-This project demonstrates the power of combining **LLMs and semantic search** to build scalable AI systems for **enterprise document management and knowledge retrieval**.
-
-The architecture emphasizes:
-- Extensibility
-- Security
-- Performance
-- Ease of deployment
-
-Making it suitable for **real-world business applications**.
-
----
+This project is owned and maintained by Malan Chanuka Herath.
 
 ## Features
-- **Document Upload & Processing**  
-  Upload and process multiple document types seamlessly.
 
-- **Vector Database Integration**  
-  Uses **Qdrant** for efficient vector storage and semantic retrieval.
+- Upload and process PDF documents
+- Chunk and embed text with Google Gemini embeddings
+- Store and search vectors using local Qdrant storage
+- Ask questions and get context-based answers from Gemini
+- React frontend for document upload, listing, delete, and query workflows
+- Inngest event pipeline with automatic local synchronous fallback
 
-- **Natural Language Querying**  
-  Ask questions in plain English and receive context-aware answers.
+## Tech Stack
 
-- **Modern React Frontend**  
-  Intuitive, responsive, and user-friendly interface.
+- Backend: FastAPI, Inngest, Google GenAI SDK, Qdrant Client
+- Frontend: React, Axios, Lucide icons
+- Document processing: LlamaIndex PDF reader + sentence chunking
+- Runtime: Python 3.12+, Node.js 16+
 
-- **Production-Ready Architecture**  
-  Scalable design, robust error handling, and easy deployment.
+## Project Structure
 
----
+```text
+.
+|- main.py                 # FastAPI app and API routes
+|- data_loader.py          # PDF load/chunk + embedding logic
+|- vector_db.py            # Qdrant collection and vector operations
+|- custom_types.py         # Typed models
+|- start.bat               # One-click Windows startup
+|- start.sh                # One-click Linux/macOS startup
+|- frontend/
+|  |- src/                 # React source
+|  |- public/
+|  |- package.json
+|- uploads/                # Uploaded PDFs (runtime)
+|- qdrant_storage/         # Local vector DB files (runtime)
+```
 
-## Architecture
+## Prerequisites
 
-### Backend
-- **Language:** Python  
-- **Framework:** FastAPI / Flask  
-- Handles document ingestion, embedding generation, and vector database operations.
+- Python 3.12+
+- Node.js 16+
+- npm
+- uv (recommended Python package manager)
+- Google Gemini API key
 
-### Frontend
-- **Framework:** React  
-- Provides UI for document upload and natural language querying.
+## Environment Variables
 
-### Vector Store
-- **Qdrant**  
-- Stores and retrieves document embeddings for semantic search.
+Create a `.env` file in the project root:
 
----
+```env
+GOOGLE_API_KEY=your_google_api_key
+GOOGLE_GEMINI_API_KEY=your_google_api_key
+GOOGLE_GEMINI_MODEL=gemini-2.5-flash
+GOOGLE_EMBEDDING_MODEL=gemini-embedding-001
+```
 
-## Getting Started
+Notes:
 
-### Prerequisites
-- Python **3.8+**
-- Node.js (for frontend)
-- Qdrant (runs locally and managed by backend)
+- `GOOGLE_API_KEY` is used for embeddings.
+- `GOOGLE_GEMINI_API_KEY` is used for answer generation.
+- You can use the same valid Gemini key for both.
 
----
+## Setup and Run
 
-## Backend Setup
+### Option A: One-click startup
 
-1. Install dependencies:
+Windows:
+
+```powershell
+start.bat
+```
+
+Linux/macOS:
+
 ```bash
-pip install -r requirements.txt
+chmod +x start.sh
+./start.sh
+```
+
+### Option B: Manual startup
+
+1. Install backend dependencies:
+
+```bash
+uv sync
+```
+
+2. Start backend:
+
+```bash
+uv run uvicorn main:app --reload
+```
+
+3. Start frontend (new terminal):
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+## Local URLs
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- FastAPI docs: http://localhost:8000/docs
+
+## API Endpoints
+
+- `POST /api/upload`
+  - Upload PDF via multipart form (`file`)
+- `GET /api/documents`
+  - List documents from uploads and vector store
+- `DELETE /api/documents/{filename}`
+  - Delete file and associated vectors
+- `POST /api/query?question=...&top_k=5`
+  - Query across embedded document chunks
+
+### Optional Inngest Dev Server
+
+If you want full async event processing locally:
+
+```bash
+npx inngest-cli@latest dev -u http://127.0.0.1:8000/api/inngest
+```
+
+If Inngest is not running, uploads still work through synchronous fallback processing.
+
+## Troubleshooting
+
+### Upload fails with embedding model 404
+
+- Set `GOOGLE_EMBEDDING_MODEL=gemini-embedding-001` in `.env`
+- Restart backend after changing env vars
+
+### Vector dimension mismatch errors
+
+- The app now auto-checks embedding dimension and recreates the local Qdrant collection if needed.
+- Recreating the collection clears previous vectors in that collection.
+
+### Frontend cannot reach backend
+
+- Ensure backend is running on port 8000
+- Confirm frontend `package.json` proxy is `http://localhost:8000`
+
+### CORS errors
+
+- Backend allows `http://localhost:3000` by default
+- Ensure frontend is served from that origin in local development
+
+## Security Notes
+
+- Never commit real API keys to GitHub.
+- If a key was exposed, rotate it immediately in Google AI Studio.
+
+## License
+
+This project is licensed under the terms in [LICENSE](LICENSE).
