@@ -1,0 +1,18 @@
+services:
+  backend:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./qdrant_storage:/app/qdrant_storage
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_BASE=http://localhost:8000
+    depends_on:
+      - backend
